@@ -22,6 +22,14 @@ module Jekyll
         large_image_url:  'LargeImage/URL'
       }.freeze
 
+      ECS_ASSOCIATE_TAG = ENV['ECS_ASSOCIATE_TAG'] || ''
+      AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY'] || ''
+      AWS_SECRET_KEY = ENV['AWS_SECRET_KEY'] || ''
+
+      raise 'AWS_ACCESS_KEY_ID env variable is not set' if AWS_ACCESS_KEY_ID.empty?
+      raise 'AWS_SECRET_KEY env variable is not set' if AWS_SECRET_KEY.empty?
+      raise 'ECS_ASSOCIATE_TAG env variable is not set' if ECS_ASSOCIATE_TAG.empty?
+
       def initialize
         @result_cache = {}
         FileUtils.mkdir_p(CACHE_DIR)
@@ -31,9 +39,9 @@ module Jekyll
         context.registers[:site]
         ::Amazon::Ecs.debug = true
         ::Amazon::Ecs.configure do |options|
-          options[:associate_tag]     = ENV['ECS_ASSOCIATE_TAG']
-          options[:AWS_access_key_id] = ENV['AWS_ACCESS_KEY']
-          options[:AWS_secret_key]    = ENV['AWS_SECRET_KEY']
+          options[:associate_tag]     = ECS_ASSOCIATE_TAG
+          options[:AWS_access_key_id] = AWS_ACCESS_KEY_ID
+          options[:AWS_secret_key]    = AWS_SECRET_KEY
           options[:response_group]    = 'Images,ItemAttributes'
           options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
         end
@@ -45,7 +53,7 @@ module Jekyll
 
         retry_api do
           res = ::Amazon::Ecs.item_lookup(asin)
-          item = res.get_element('Item')
+          item = res.first_item
           data = create_data(item)
           write_cache(asin, data)
           @result_cache[asin] = data
