@@ -7,6 +7,8 @@ module Jekyll
     class AmazonResultCache
       include Singleton
 
+      CACHE_DIR = '.amazon-cache/'.freeze
+
       ITEM_HASH = {
         asin:             'ASIN',
         title:            'ItemAttributes/Title',
@@ -20,12 +22,38 @@ module Jekyll
         large_image_url:  'LargeImage/URL'
       }.freeze
 
-      CACHE_DIR = '.amazon-cache/'.freeze
-
       def initialize
         @result_cache = {}
         FileUtils.mkdir_p(CACHE_DIR)
       end
+
+      def setup(context)
+        context.registers[:site]
+        ::Amazon::Ecs.debug = true
+        ::Amazon::Ecs.configure do |options|
+          options[:associate_tag]     = ENV['ECS_ASSOCIATE_TAG']
+          options[:AWS_access_key_id] = ENV['AWS_ACCESS_KEY']
+          options[:AWS_secret_key]    = ENV['AWS_SECRET_KEY']
+          options[:response_group]    = 'Images,ItemAttributes'
+          options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
+        end
+      end
+
+      def item_lookup(asin)
+        return @result_cache[asin] if @result_cache.key?(asin)
+        return read_cache(asin) if read_cache(asin)
+
+        retry_api do
+          res = ::Amazon::Ecs.item_lookup(asin)
+          item = res.get_element('Item')
+          data = create_data(item)
+          write_cache(asin, data)
+          @result_cache[asin] = data
+          @result_cache[asin]
+        end
+      end
+
+      private
 
       def read_cache(asin)
         path = File.join(CACHE_DIR, asin)
@@ -37,33 +65,6 @@ module Jekyll
         path = File.join(CACHE_DIR, asin)
         File.open(path, 'w') { |f| f.write(Marshal.dump(obj)) }
       end
-
-      def setup(context)
-        site = context.registers[:site]
-        ::Amazon::Ecs.configure do |options|
-          options[:associate_tag]     = site.config['amazon_associate_tag'] || 'tokzk-22'
-          options[:AWS_access_key_id] = site.config['amazon_access_key_id'] || ENV['AWS_ACCESS_KEY']
-          options[:AWS_secret_key]    = site.config['amazon_secret_key'] || ENV['AWS_SECRET_KEY']
-          options[:response_group]    = 'Images,ItemAttributes'
-          options[:country]           = site.config['amazon_country'] || 'jp'
-        end
-      end
-
-      def item_lookup(asin)
-        return @result_cache[asin] if @result_cache.key?(asin)
-        return read_cache(asin) if read_cache(asin)
-
-        retry_api do
-          puts "ASIN: #{asin}"
-          res = ::Amazon::Ecs.item_lookup(asin)
-          item = res.get_element('Item')
-          data = create_data(item)
-          write_cache(asin, data)
-          data
-        end
-      end
-
-      private
 
       def retry_api
         yield
@@ -89,7 +90,9 @@ module Jekyll
       def initialize(tag_name, markup, tokens)
         super
         parse_options(markup)
-        raise SyntaxError, "No ASIN given in #{tag_name} tag" if asin.nil? || asin.empty?
+        if asin.nil? || asin.empty?
+          raise SyntaxError, "No ASIN given in #{tag_name} tag"
+        end
       end
 
       def render(context)

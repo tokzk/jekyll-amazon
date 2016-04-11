@@ -26,7 +26,9 @@ RSpec.configure do |config|
 
   def doc_with_content(_, opts = {})
     my_site = site(opts)
-    Jekyll::Document.new(source_dir('_test/doc.md'), site: my_site, collection: collection(my_site))
+    Jekyll::Document.new(source_dir('_test/doc.md'),
+                         site: my_site,
+                         collection: collection(my_site))
   end
 
   def collection(site, label = 'test')
@@ -35,7 +37,8 @@ RSpec.configure do |config|
 
   def site(opts = {})
     options = opts.merge(source: source_dir, destination: dest_dir)
-    conf = Jekyll::Utils.deep_merge_hashes(Jekyll::Configuration::DEFAULTS, options)
+    conf = Jekyll::Utils.deep_merge_hashes(Jekyll::Configuration::DEFAULTS,
+                                           options)
     Jekyll::Site.new(conf)
   end
 end
