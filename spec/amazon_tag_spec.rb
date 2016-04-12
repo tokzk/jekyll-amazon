@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'spec_helper'
 
 describe Jekyll::Amazon::AmazonTag do
@@ -17,10 +18,10 @@ describe Jekyll::Amazon::AmazonTag do
   end
 
   context 'valid asin' do
-    let(:asin) { '4797386290' }
+    let(:asin) { '0974514055' }
 
     it 'match asin' do
-      expect(output).to match('4797386290')
+      expect(output).to match(/Programming Ruby: The Pragmatic Programmer’s Guide/)
     end
   end
 
