@@ -18,6 +18,13 @@ Or install it yourself as:
 
     $ gem install jekyll-amazon
 
+And set the environment varables of the amazon ecs:
+
+    $ export ECS_ASSOCIATE_TAG=...
+    $ export AWS_ACCESS_KEY_ID=...
+    $ export AWS_SECRET_KEY...
+
+
 Finally, add the following to your site's `_config.yml`:
 
 ```
