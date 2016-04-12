@@ -1,7 +1,6 @@
 # coding: utf-8
 require 'amazon/ecs'
 require 'singleton'
-require 'pathname'
 
 module Jekyll
   module Amazon
@@ -33,13 +32,12 @@ module Jekyll
 
       def initialize
         @result_cache = {}
-        @cache_dir = Pathname.new(CACHE_DIR)
-        @cache_dir.mkdir_p
+        FileUtils.mkdir_p(CACHE_DIR)
       end
 
       def setup(context)
         context.registers[:site]
-        ::Amazon::Ecs.debug = true
+        # ::Amazon::Ecs.debug = true
         ::Amazon::Ecs.configure do |options|
           options[:associate_tag]     = ECS_ASSOCIATE_TAG
           options[:AWS_access_key_id] = AWS_ACCESS_KEY_ID
@@ -66,14 +64,14 @@ module Jekyll
       private
 
       def read_cache(asin)
-        path = @cache_dir.join(asin)
-        return nil unless path.file?
-        Marshal.load(path.read)
+        path = File.join(CACHE_DIR, asin)
+        return nil unless File.exist?(path)
+        File.open(path, 'r') { |f| Marshal.load(f.read) }
       end
 
       def write_cache(asin, obj)
-        path = @cache_dir.join(asin)
-        path.open { |f| f.write(Marshal.dump(obj)) }
+        path = File.join(CACHE_DIR, asin)
+        File.open(path, 'w') { |f| f.write(Marshal.dump(obj)) }
       end
 
       def retry_api
