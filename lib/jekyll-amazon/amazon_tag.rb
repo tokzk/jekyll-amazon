@@ -1,6 +1,7 @@
 # coding: utf-8
 require 'amazon/ecs'
 require 'singleton'
+require 'pathname'
 
 module Jekyll
   module Amazon
@@ -32,7 +33,8 @@ module Jekyll
 
       def initialize
         @result_cache = {}
-        FileUtils.mkdir_p(CACHE_DIR)
+        @cache_dir = Pathname.new(CACHE_DIR)
+        @cache_dir.mkdir_p
       end
 
       def setup(context)
@@ -64,14 +66,14 @@ module Jekyll
       private
 
       def read_cache(asin)
-        path = File.join(CACHE_DIR, asin)
-        return nil unless File.exist?(path)
-        File.open(path, 'r') { |f| Marshal.load(f.read) }
+        path = @cache_dir.join(asin)
+        return nil unless path.file?
+        Marshal.load(path.read)
       end
 
       def write_cache(asin, obj)
-        path = File.join(CACHE_DIR, asin)
-        File.open(path, 'w') { |f| f.write(Marshal.dump(obj)) }
+        path = @cache_dir.join(asin)
+        path.open { |f| f.write(Marshal.dump(obj)) }
       end
 
       def retry_api
