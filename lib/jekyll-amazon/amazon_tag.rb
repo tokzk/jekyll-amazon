@@ -11,6 +11,7 @@ module Jekyll
 
       ITEM_HASH = {
         asin:             'ASIN',
+        salesrank:        'SalesRank',
         title:            'ItemAttributes/Title',
         author:           'ItemAttributes/Author',
         publisher:        'ItemAttributes/Manufacturer',
@@ -42,7 +43,7 @@ module Jekyll
           options[:associate_tag]     = ECS_ASSOCIATE_TAG
           options[:AWS_access_key_id] = AWS_ACCESS_KEY_ID
           options[:AWS_secret_key]    = AWS_SECRET_KEY
-          options[:response_group]    = 'Images,ItemAttributes'
+          options[:response_group]    = 'SalesRank,Images,ItemAttributes'
           options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
         end
       end
@@ -144,6 +145,7 @@ module Jekyll
         author    = item[:author]
         publisher = item[:publisher]
         date      = item[:publication_date] || item[:release_date]
+        salesrank = item[:salesrank]
         str = <<-"EOS"
 <div class="amazon_item">
   <div class="amazon_image">
@@ -159,6 +161,7 @@ module Jekyll
       <span class="amazon_info_author">#{author} </span>
       <span class="amazon_info_publisher">#{publisher} </span>
       <span class="amazon_info_date">#{date} </span>
+      <span class="amazon_info_salesrank">#{salesrank} </span>
     </div>
   </div>
 </div>
