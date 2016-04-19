@@ -139,34 +139,40 @@ module Jekyll
       end
 
       def detail(item)
-        url       = item[:detail_page_url]
-        image_url = item[:medium_image_url]
-        title     = item[:title]
         author    = item[:author]
         publisher = item[:publisher]
         date      = item[:publication_date] || item[:release_date]
         salesrank = item[:salesrank]
         str = <<-"EOS"
-<div class="amazon_item">
-  <div class="amazon_image">
-    <a href="#{url}" target="_blank">
-      <img src="#{image_url}" alt="#{title}" />
-    </a>
+<div class="jk-amazon-item">
+  <div class="jk-amazon-image">
+    #{image(item)}
   </div>
-  <div class="amazon_info">
-    <div class="amazon_info_title">
-      <a href="#{url}" target="_blank">#{title}</a>
+  <div class="jk-amazon-info">
+    <div class="jk-amazon-info-title">
+      #{title(item)}
     </div>
-    <div class="amazon_info_detail">
-      <span class="amazon_info_author">#{author} </span>
-      <span class="amazon_info_publisher">#{publisher} </span>
-      <span class="amazon_info_date">#{date} </span>
-      <span class="amazon_info_salesrank">#{salesrank} </span>
+    <div class="jk-amazon-info-author">
+      #{labeled("Author: ", author)}
+    </div>
+    <div class="jk-amazon-info-publisher">
+      #{labeled("Publisher: ", publisher)}
+    </div>
+    <div class="jk-amazon-info-date">
+      #{labeled("Date: ", date)}
+    </div>
+    <div class="jk-amazon-info-salesrank">
+      #{labeled("Sales Rank: ", salesrank)}
     </div>
   </div>
 </div>
   EOS
         str.to_s
+      end
+
+      def labeled(label, value)
+        return "" if value.nil? || value.empty?
+        "<span class=\"amazon-info-label\">#{label} </span>#{value}"
       end
     end
   end
