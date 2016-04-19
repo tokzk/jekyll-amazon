@@ -1,0 +1,23 @@
+.jk-amazon-item {
+  margin-bottom: 20px;
+  .jk-amazon-image {
+    float: left;
+    min-height: 1px;
+    width: 130px;
+  }
+  .jk-amazon-info {
+    margin-left: 130px;
+    min-height: 1px;
+    .jk-amazon-info-title {
+      padding-bottom: 10px;
+    }
+  }
+  &:before, &:after {
+    display: table;
+    content: " ";
+  }
+  &:after {
+    display: block;
+    clear: both;
+  }
+}
