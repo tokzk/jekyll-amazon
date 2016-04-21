@@ -8,7 +8,7 @@ module Jekyll
       include Singleton
 
       CACHE_DIR = '.amazon-cache/'.freeze
-      RESPONSE_GROUP = 'SalesRank,Images,ItemAttributes'.freese
+      RESPONSE_GROUP = 'SalesRank,Images,ItemAttributes,EditorialReview'.freese
 
       ITEM_HASH = {
         asin:             'ASIN',
@@ -166,6 +166,9 @@ module Jekyll
     </div>
     <div class="jk-amazon-info-salesrank">
       #{labeled('Sales Rank: ', salesrank)}
+    </div>
+    <div class="jk-amazon-info-description">
+      #{labeled('Description: ', description)}
     </div>
   </div>
 </div>
