@@ -8,7 +8,7 @@ module Jekyll
       include Singleton
 
       CACHE_DIR = '.amazon-cache/'.freeze
-      RESPONSE_GROUP = 'SalesRank,Images,ItemAttributes,EditorialReview'.freese
+      RESPONSE_GROUP = 'SalesRank,Images,ItemAttributes,EditorialReview'.freeze
 
       ITEM_HASH = {
         asin:             'ASIN',
