@@ -178,7 +178,7 @@ module Jekyll
 
       def labeled(label, value)
         return '' if value.nil? || value.empty?
-        "<span class=\"amazon-info-label\">#{label} </span>#{value}"
+        "<span class=\"jk-amazon-info-label\">#{label} </span>#{value}"
       end
 
       def br2nl(text)
