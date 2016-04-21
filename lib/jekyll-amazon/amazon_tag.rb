@@ -145,7 +145,7 @@ module Jekyll
         publisher = item[:publisher]
         date      = item[:publication_date] || item[:release_date]
         salesrank = item[:salesrank]
-        description = item[:description]
+        description = br2nl(item[:description])
         str = <<-"EOS"
 <div class="jk-amazon-item">
   <div class="jk-amazon-image">
@@ -179,6 +179,10 @@ module Jekyll
       def labeled(label, value)
         return '' if value.nil? || value.empty?
         "<span class=\"amazon-info-label\">#{label} </span>#{value}"
+      end
+
+      def br2nl(text)
+        text.gsub(%r{&lt;br\s*/?&gt;}, "\n") unless text.nil?
       end
     end
   end
