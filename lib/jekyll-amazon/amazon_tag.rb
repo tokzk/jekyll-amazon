@@ -8,6 +8,7 @@ module Jekyll
       include Singleton
 
       CACHE_DIR = '.amazon-cache/'.freeze
+      RESPONSE_GROUP = 'SalesRank,Images,ItemAttributes'.freese
 
       ITEM_HASH = {
         asin:             'ASIN',
@@ -20,7 +21,8 @@ module Jekyll
         detail_page_url:  'DetailPageURL',
         small_image_url:  'SmallImage/URL',
         medium_image_url: 'MediumImage/URL',
-        large_image_url:  'LargeImage/URL'
+        large_image_url:  'LargeImage/URL',
+        description:      'EditorialReviews/EditorialReview/Content'
       }.freeze
 
       ECS_ASSOCIATE_TAG = ENV['ECS_ASSOCIATE_TAG'] || ''
@@ -43,7 +45,7 @@ module Jekyll
           options[:associate_tag]     = ECS_ASSOCIATE_TAG
           options[:AWS_access_key_id] = AWS_ACCESS_KEY_ID
           options[:AWS_secret_key]    = AWS_SECRET_KEY
-          options[:response_group]    = 'SalesRank,Images,ItemAttributes'
+          options[:response_group]    = RESPONSE_GROUP
           options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
         end
       end
@@ -143,6 +145,7 @@ module Jekyll
         publisher = item[:publisher]
         date      = item[:publication_date] || item[:release_date]
         salesrank = item[:salesrank]
+        description = item[:description]
         str = <<-"EOS"
 <div class="jk-amazon-item">
   <div class="jk-amazon-image">
@@ -153,16 +156,16 @@ module Jekyll
       #{title(item)}
     </div>
     <div class="jk-amazon-info-author">
-      #{labeled("Author: ", author)}
+      #{labeled('Author: ', author)}
     </div>
     <div class="jk-amazon-info-publisher">
-      #{labeled("Publisher: ", publisher)}
+      #{labeled('Publisher: ', publisher)}
     </div>
     <div class="jk-amazon-info-date">
-      #{labeled("Date: ", date)}
+      #{labeled('Date: ', date)}
     </div>
     <div class="jk-amazon-info-salesrank">
-      #{labeled("Sales Rank: ", salesrank)}
+      #{labeled('Sales Rank: ', salesrank)}
     </div>
   </div>
 </div>
@@ -171,7 +174,7 @@ module Jekyll
       end
 
       def labeled(label, value)
-        return "" if value.nil? || value.empty?
+        return '' if value.nil? || value.empty?
         "<span class=\"amazon-info-label\">#{label} </span>#{value}"
       end
     end
