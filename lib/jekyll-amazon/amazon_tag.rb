@@ -50,12 +50,12 @@ module Jekyll
           options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
         end
 
-        #i18n
         locale = 'ja'
         locale = site.config['amazon_locale'] if site.config['amazon_locale']
         I18n.enforce_available_locales = false
         I18n.locale = locale.to_sym
-        I18n.load_path = [File.expand_path(File.dirname(__FILE__)) + "/../../locales/#{locale}.yml"]
+        dir = File.expand_path(File.dirname(__FILE__))
+        I18n.load_path = [dir + "/../../locales/#{locale}.yml"]
       end
 
       def item_lookup(asin)
@@ -160,7 +160,7 @@ module Jekyll
           publisher: I18n.t('publisher'),
           date: I18n.t('date'),
           salesrank: I18n.t('salesrank'),
-          description: I18n.t('description'),
+          description: I18n.t('description')
         }
         str = <<-"EOS"
 <div class="jk-amazon-item">
@@ -189,7 +189,6 @@ module Jekyll
   </div>
 </div>
   EOS
-        puts str
         str.to_s
       end
 
