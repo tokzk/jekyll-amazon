@@ -1,6 +1,7 @@
 # coding: utf-8
 require 'amazon/ecs'
 require 'singleton'
+require 'i18n'
 
 module Jekyll
   module Amazon
@@ -39,7 +40,7 @@ module Jekyll
       end
 
       def setup(context)
-        context.registers[:site]
+        site = context.registers[:site]
         # ::Amazon::Ecs.debug = true
         ::Amazon::Ecs.configure do |options|
           options[:associate_tag]     = ECS_ASSOCIATE_TAG
@@ -48,20 +49,27 @@ module Jekyll
           options[:response_group]    = RESPONSE_GROUP
           options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
         end
+
+        #i18n
+        locale = 'ja'
+        locale = site.config['amazon_locale'] if site.config['amazon_locale']
+        I18n.enforce_available_locales = false
+        I18n.locale = locale.to_sym
+        I18n.load_path = [File.expand_path(File.dirname(__FILE__)) + "/../../locales/#{locale}.yml"]
       end
 
       def item_lookup(asin)
         return @result_cache[asin] if @result_cache.key?(asin)
         return read_cache(asin) if read_cache(asin)
-
-        retry_api do
+        item = retry_api do
           res = ::Amazon::Ecs.item_lookup(asin)
-          item = res.first_item
-          data = create_data(item)
-          write_cache(asin, data)
-          @result_cache[asin] = data
-          @result_cache[asin]
+          res.first_item
         end
+        raise ArgumentError unless item
+        data = create_data(item)
+        write_cache(asin, data)
+        @result_cache[asin] = data
+        @result_cache[asin]
       end
 
       private
@@ -88,6 +96,7 @@ module Jekyll
       end
 
       def create_data(item)
+        return unless item
         ITEM_HASH.each_with_object({}) do |(key, value), hash|
           hash[key] = item.get(value).to_s
         end
@@ -146,6 +155,13 @@ module Jekyll
         date      = item[:publication_date] || item[:release_date]
         salesrank = item[:salesrank]
         description = br2nl(item[:description])
+        labels = {
+          author: I18n.t('author'),
+          publisher: I18n.t('publisher'),
+          date: I18n.t('date'),
+          salesrank: I18n.t('salesrank'),
+          description: I18n.t('description'),
+        }
         str = <<-"EOS"
 <div class="jk-amazon-item">
   <div class="jk-amazon-image">
@@ -156,23 +172,24 @@ module Jekyll
       #{title(item)}
     </div>
     <div class="jk-amazon-info-author">
-      #{labeled('Author: ', author)}
+      #{labeled(labels[:author], author)}
     </div>
     <div class="jk-amazon-info-publisher">
-      #{labeled('Publisher: ', publisher)}
+      #{labeled(labels[:publisher], publisher)}
     </div>
     <div class="jk-amazon-info-date">
-      #{labeled('Date: ', date)}
+      #{labeled(labels[:date], date)}
     </div>
     <div class="jk-amazon-info-salesrank">
-      #{labeled('Sales Rank: ', salesrank)}
+      #{labeled(labels[:salesrank], salesrank)}
     </div>
     <div class="jk-amazon-info-description">
-      #{labeled('Description: ', description)}
+      #{labeled(labels[:description], description)}
     </div>
   </div>
 </div>
   EOS
+        puts str
         str.to_s
       end
 
