@@ -50,6 +50,10 @@ module Jekyll
           options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
         end
 
+        setup_i18n(site)
+      end
+
+      def setup_i18n(site)
         locale = 'ja'
         locale = site.config['amazon_locale'] if site.config['amazon_locale']
         I18n.enforce_available_locales = false
@@ -103,6 +107,28 @@ module Jekyll
       end
     end
 
+    class ItemAttribute
+      attr_accessor :key
+      attr_accessor :value
+
+      def initialize(key, value)
+        self.key = key
+        self.value = value
+      end
+
+      def to_html
+        str = "<div class=\"jk-amazon-info-#{key}\">"
+        str += labeled
+        str += '</div>'
+        str
+      end
+
+      def labeled
+        return '' if value.nil? || value.empty?
+        "<span class=\"jk-amazon-info-label\">#{I18n.t(key)} </span>#{value}"
+      end
+    end
+
     class AmazonTag < Liquid::Tag
       attr_accessor :asin
       attr_accessor :template_type
@@ -150,18 +176,14 @@ module Jekyll
       end
 
       def detail(item)
-        author    = item[:author]
-        publisher = item[:publisher]
-        date      = item[:publication_date] || item[:release_date]
-        salesrank = item[:salesrank]
-        description = br2nl(item[:description])
-        labels = {
-          author: I18n.t('author'),
-          publisher: I18n.t('publisher'),
-          date: I18n.t('date'),
-          salesrank: I18n.t('salesrank'),
-          description: I18n.t('description')
-        }
+        attrs = {
+          author: item[:author],
+          publisher: item[:publisher],
+          date: item[:publication_date] || item[:release_date],
+          salesrank: item[:salesrank],
+          description: br2nl(item[:description])
+        }.map { |k, v| ItemAttribute.new(k, v).to_html }.join("\n")
+
         str = <<-"EOS"
 <div class="jk-amazon-item">
   <div class="jk-amazon-image">
@@ -171,30 +193,11 @@ module Jekyll
     <div class="jk-amazon-info-title">
       #{title(item)}
     </div>
-    <div class="jk-amazon-info-author">
-      #{labeled(labels[:author], author)}
-    </div>
-    <div class="jk-amazon-info-publisher">
-      #{labeled(labels[:publisher], publisher)}
-    </div>
-    <div class="jk-amazon-info-date">
-      #{labeled(labels[:date], date)}
-    </div>
-    <div class="jk-amazon-info-salesrank">
-      #{labeled(labels[:salesrank], salesrank)}
-    </div>
-    <div class="jk-amazon-info-description">
-      #{labeled(labels[:description], description)}
-    </div>
+    #{attrs}
   </div>
 </div>
-  EOS
+        EOS
         str.to_s
-      end
-
-      def labeled(label, value)
-        return '' if value.nil? || value.empty?
-        "<span class=\"jk-amazon-info-label\">#{label} </span>#{value}"
       end
 
       def br2nl(text)
