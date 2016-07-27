@@ -24,7 +24,7 @@ module Jekyll
       }.freeze
 
       ECS_ASSOCIATE_TAG = ENV['ECS_ASSOCIATE_TAG'] || ''
-      AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY'] || ''
+      AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID'] || ''
       AWS_SECRET_KEY = ENV['AWS_SECRET_KEY'] || ''
 
       raise 'AWS_ACCESS_KEY_ID env variable is not set' if AWS_ACCESS_KEY_ID.empty?
