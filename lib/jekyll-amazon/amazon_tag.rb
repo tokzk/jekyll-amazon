@@ -1,6 +1,7 @@
 # coding: utf-8
 require 'amazon/ecs'
 require 'singleton'
+require 'i18n'
 
 module Jekyll
   module Amazon
@@ -8,6 +9,7 @@ module Jekyll
       include Singleton
 
       CACHE_DIR = '.amazon-cache/'.freeze
+      RESPONSE_GROUP = 'SalesRank,Images,ItemAttributes,EditorialReview'.freeze
 
       ITEM_HASH = {
         asin:             'ASIN',
@@ -20,7 +22,8 @@ module Jekyll
         detail_page_url:  'DetailPageURL',
         small_image_url:  'SmallImage/URL',
         medium_image_url: 'MediumImage/URL',
-        large_image_url:  'LargeImage/URL'
+        large_image_url:  'LargeImage/URL',
+        description:      'EditorialReviews/EditorialReview/Content'
       }.freeze
 
       ECS_ASSOCIATE_TAG = ENV['ECS_ASSOCIATE_TAG'] || ''
@@ -37,29 +40,40 @@ module Jekyll
       end
 
       def setup(context)
-        context.registers[:site]
+        site = context.registers[:site]
         # ::Amazon::Ecs.debug = true
         ::Amazon::Ecs.configure do |options|
           options[:associate_tag]     = ECS_ASSOCIATE_TAG
           options[:AWS_access_key_id] = AWS_ACCESS_KEY_ID
           options[:AWS_secret_key]    = AWS_SECRET_KEY
-          options[:response_group]    = 'SalesRank,Images,ItemAttributes'
+          options[:response_group]    = RESPONSE_GROUP
           options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
         end
+
+        setup_i18n(site)
+      end
+
+      def setup_i18n(site)
+        locale = 'ja'
+        locale = site.config['amazon_locale'] if site.config['amazon_locale']
+        I18n.enforce_available_locales = false
+        I18n.locale = locale.to_sym
+        dir = File.expand_path(File.dirname(__FILE__))
+        I18n.load_path = [dir + "/../../locales/#{locale}.yml"]
       end
 
       def item_lookup(asin)
         return @result_cache[asin] if @result_cache.key?(asin)
         return read_cache(asin) if read_cache(asin)
-
-        retry_api do
+        item = retry_api do
           res = ::Amazon::Ecs.item_lookup(asin)
-          item = res.first_item
-          data = create_data(item)
-          write_cache(asin, data)
-          @result_cache[asin] = data
-          @result_cache[asin]
+          res.first_item
         end
+        raise ArgumentError unless item
+        data = create_data(item)
+        write_cache(asin, data)
+        @result_cache[asin] = data
+        @result_cache[asin]
       end
 
       private
@@ -86,9 +100,32 @@ module Jekyll
       end
 
       def create_data(item)
+        return unless item
         ITEM_HASH.each_with_object({}) do |(key, value), hash|
           hash[key] = item.get(value).to_s
         end
+      end
+    end
+
+    class ItemAttribute
+      attr_accessor :key
+      attr_accessor :value
+
+      def initialize(key, value)
+        self.key = key
+        self.value = value
+      end
+
+      def to_html
+        str = "<div class=\"jk-amazon-info-#{key}\">"
+        str += labeled
+        str += '</div>'
+        str
+      end
+
+      def labeled
+        return '' if value.nil? || value.empty?
+        "<span class=\"jk-amazon-info-label\">#{I18n.t(key)} </span>#{value}"
       end
     end
 
@@ -139,10 +176,14 @@ module Jekyll
       end
 
       def detail(item)
-        author    = item[:author]
-        publisher = item[:publisher]
-        date      = item[:publication_date] || item[:release_date]
-        salesrank = item[:salesrank]
+        attrs = {
+          author: item[:author],
+          publisher: item[:publisher],
+          date: item[:publication_date] || item[:release_date],
+          salesrank: item[:salesrank],
+          description: br2nl(item[:description])
+        }.map { |k, v| ItemAttribute.new(k, v).to_html }.join("\n")
+
         str = <<-"EOS"
 <div class="jk-amazon-item">
   <div class="jk-amazon-image">
@@ -152,27 +193,15 @@ module Jekyll
     <div class="jk-amazon-info-title">
       #{title(item)}
     </div>
-    <div class="jk-amazon-info-author">
-      #{labeled("Author: ", author)}
-    </div>
-    <div class="jk-amazon-info-publisher">
-      #{labeled("Publisher: ", publisher)}
-    </div>
-    <div class="jk-amazon-info-date">
-      #{labeled("Date: ", date)}
-    </div>
-    <div class="jk-amazon-info-salesrank">
-      #{labeled("Sales Rank: ", salesrank)}
-    </div>
+    #{attrs}
   </div>
 </div>
-  EOS
+        EOS
         str.to_s
       end
 
-      def labeled(label, value)
-        return "" if value.nil? || value.empty?
-        "<span class=\"amazon-info-label\">#{label} </span>#{value}"
+      def br2nl(text)
+        text.gsub(%r{&lt;br\s*/?&gt;}, "\n") unless text.nil?
       end
     end
   end
