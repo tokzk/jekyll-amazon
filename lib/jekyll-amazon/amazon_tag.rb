@@ -160,7 +160,10 @@ module Jekyll
       def title(item)
         url   = item[:detail_page_url]
         title = item[:title]
-        format(%(<a href="%s" target="_blank">%s</a>), url, title)
+        format(
+          %(<a class="jk-amazon-info-title" href="%s" target="_blank">%s</a>),
+          url, title
+        )
       end
 
       def image(item)
@@ -168,7 +171,7 @@ module Jekyll
         title     = item[:title]
         image_url = item[:medium_image_url]
         str = <<-"EOS"
-<a href="#{url}" target="_blank">
+<a class="jk-amazon-image" href="#{url}" target="_blank">
   <img src="#{image_url}" alt="#{title}" />
 </a>
   EOS
@@ -186,13 +189,9 @@ module Jekyll
 
         str = <<-"EOS"
 <div class="jk-amazon-item">
-  <div class="jk-amazon-image">
-    #{image(item)}
-  </div>
+  #{image(item)}
   <div class="jk-amazon-info">
-    <div class="jk-amazon-info-title">
-      #{title(item)}
-    </div>
+    #{title(item)}
     #{attrs}
   </div>
 </div>
