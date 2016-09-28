@@ -136,9 +136,7 @@ module Jekyll
       def initialize(tag_name, markup, tokens)
         super
         parse_options(markup)
-        if asin.nil? || asin.empty?
-          raise SyntaxError, "No ASIN given in #{tag_name} tag"
-        end
+        error "No ASIN given in #{tag_name} tag" if asin.nil? || asin.empty?
       end
 
       def render(context)
@@ -201,6 +199,10 @@ module Jekyll
 
       def br2nl(text)
         text.gsub(%r{&lt;br\s*/?&gt;}, "\n") unless text.nil?
+      end
+
+      def error(message)
+        raise SyntaxError, message
       end
     end
   end
