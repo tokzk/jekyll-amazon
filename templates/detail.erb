@@ -1,0 +1,27 @@
+<div class="jk-amazon-item">
+  <a class="jk-amazon-image" href="<%= item[:detail_page_url] %>" target="_blank">
+    <img src="<%= item[:medium_image_url] %>" alt="<%= item[:title] %>" />
+  </a>
+  <div class="jk-amazon-info">
+    <a class="jk-amazon-info-title" href="<%= item[:detail_page_url] %>" target="_blank">
+      <%= item[:title] %>
+    </a>
+    <%
+      { 
+        author: item[:author],
+        publisher: item[:publisher],
+        date: item[:publication_date] || item[:release_date],
+        salesrank: item[:salesrank],
+        description: br2nl(item[:description])
+      }.each do |key, value|
+        next if value.nil? || value.empty?
+    %>
+    <div class="jk-amazon-info-<%= key %>">
+      <span class="jk-amazon-info-label">
+        <%= I18n.t(key) %>
+      </span>
+      <%= value %>
+    </div>
+    <% end %>
+  </div>
+</div>

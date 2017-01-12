@@ -2,6 +2,7 @@
 require 'amazon/ecs'
 require 'singleton'
 require 'i18n'
+require 'erb'
 
 module Jekyll
   module Amazon
@@ -99,28 +100,6 @@ module Jekyll
       end
     end
 
-    class ItemAttribute
-      attr_accessor :key
-      attr_accessor :value
-
-      def initialize(key, value)
-        self.key = key
-        self.value = value
-      end
-
-      def to_html
-        str = "<div class=\"jk-amazon-info-#{key}\">"
-        str += labeled
-        str += '</div>'
-        str
-      end
-
-      def labeled
-        return '' if value.nil? || value.empty?
-        "<span class=\"jk-amazon-info-label\">#{I18n.t(key)} </span>#{value}"
-      end
-    end
-
     class AmazonTag < Liquid::Tag
       attr_accessor :asin
       attr_accessor :template_type
@@ -136,7 +115,7 @@ module Jekyll
         AmazonResultCache.instance.setup(context)
         item = AmazonResultCache.instance.item_lookup(asin.to_s)
         return unless item
-        send(type, item)
+        render_from_file(type, item)
       end
 
       private
@@ -147,46 +126,10 @@ module Jekyll
         self.template_type = options.shift || :title
       end
 
-      def title(item)
-        url   = item[:detail_page_url]
-        title = item[:title]
-        format(
-          %(<a class="jk-amazon-info-title" href="%s" target="_blank">%s</a>),
-          url, title
-        )
-      end
-
-      def image(item)
-        url       = item[:detail_page_url]
-        title     = item[:title]
-        image_url = item[:medium_image_url]
-        str = <<-"EOS"
-<a class="jk-amazon-image" href="#{url}" target="_blank">
-  <img src="#{image_url}" alt="#{title}" />
-</a>
-  EOS
-        str.to_s
-      end
-
-      def detail(item)
-        attrs = {
-          author: item[:author],
-          publisher: item[:publisher],
-          date: item[:publication_date] || item[:release_date],
-          salesrank: item[:salesrank],
-          description: br2nl(item[:description])
-        }.map { |k, v| ItemAttribute.new(k, v).to_html }.join("\n")
-
-        str = <<-"EOS"
-<div class="jk-amazon-item">
-  #{image(item)}
-  <div class="jk-amazon-info">
-    #{title(item)}
-    #{attrs}
-  </div>
-</div>
-        EOS
-        str.to_s
+      def render_from_file(template_type, item)
+        filename = "../../templates/#{template_type}.erb"
+        file = File.expand_path(filename, __dir__)
+        ERB.new(open(file).read).result(binding)
       end
 
       def br2nl(text)
