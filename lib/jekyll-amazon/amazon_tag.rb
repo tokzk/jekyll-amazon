@@ -41,7 +41,7 @@ module Jekyll
 
       def setup(context)
         site = context.registers[:site]
-        # ::Amazon::Ecs.debug = true
+        ::Amazon::Ecs.debug = ENV.fetch('JEKYLL_AMAZON_DEBUG', 'false') == 'true'
         ::Amazon::Ecs.configure do |options|
           options[:associate_tag]     = ECS_ASSOCIATE_TAG
           options[:AWS_access_key_id] = AWS_ACCESS_KEY_ID
