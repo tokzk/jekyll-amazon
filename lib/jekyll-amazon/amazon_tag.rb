@@ -26,14 +26,6 @@ module Jekyll
         description:      'EditorialReviews/EditorialReview/Content'
       }.freeze
 
-      ECS_ASSOCIATE_TAG = ENV['ECS_ASSOCIATE_TAG'] || ''
-      AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID'] || ''
-      AWS_SECRET_KEY = ENV['AWS_SECRET_KEY'] || ''
-
-      raise 'AWS_ACCESS_KEY_ID env variable is not set' if AWS_ACCESS_KEY_ID.empty?
-      raise 'AWS_SECRET_KEY env variable is not set' if AWS_SECRET_KEY.empty?
-      raise 'ECS_ASSOCIATE_TAG env variable is not set' if ECS_ASSOCIATE_TAG.empty?
-
       def initialize
         @result_cache = {}
         FileUtils.mkdir_p(CACHE_DIR)
@@ -43,11 +35,11 @@ module Jekyll
         site = context.registers[:site]
         ::Amazon::Ecs.debug = ENV.fetch('JEKYLL_AMAZON_DEBUG', 'false') == 'true'
         ::Amazon::Ecs.configure do |options|
-          options[:associate_tag]     = ECS_ASSOCIATE_TAG
-          options[:AWS_access_key_id] = AWS_ACCESS_KEY_ID
-          options[:AWS_secret_key]    = AWS_SECRET_KEY
+          options[:associate_tag]     = ENV.fetch('ECS_ASSOCIATE_TAG')
+          options[:AWS_access_key_id] = ENV.fetch('AWS_ACCESS_KEY_ID')
+          options[:AWS_secret_key]    = ENV.fetch('AWS_SECRET_KEY')
           options[:response_group]    = RESPONSE_GROUP
-          options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
+          options[:country]           = ENV.fetch('ECS_COUNTRY', 'jp')
         end
 
         setup_i18n(site)
