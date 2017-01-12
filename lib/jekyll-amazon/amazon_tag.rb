@@ -34,7 +34,7 @@ module Jekyll
 
       def setup(context)
         site = context.registers[:site]
-        ::Amazon::Ecs.debug = ENV.fetch('JEKYLL_AMAZON_DEBUG', 'false') == 'true'
+        ::Amazon::Ecs.debug = debug?
         ::Amazon::Ecs.configure do |options|
           options[:associate_tag]     = ENV.fetch('ECS_ASSOCIATE_TAG')
           options[:AWS_access_key_id] = ENV.fetch('AWS_ACCESS_KEY_ID')
@@ -51,8 +51,8 @@ module Jekyll
         locale = site.config['amazon_locale'] if site.config['amazon_locale']
         I18n.enforce_available_locales = false
         I18n.locale = locale.to_sym
-        dir = File.expand_path(File.dirname(__FILE__))
-        I18n.load_path = [dir + "/../../locales/#{locale}.yml"]
+        file = File.expand_path("../../locales/#{locale}.yml", __dir__)
+        I18n.load_path = [file]
       end
 
       def item_lookup(asin)
@@ -63,13 +63,21 @@ module Jekyll
           res.first_item
         end
         raise ArgumentError unless item
+        save(asin, item)
+      end
+
+      private
+
+      def save(asin, item)
         data = create_data(item)
         write_cache(asin, data)
         @result_cache[asin] = data
         @result_cache[asin]
       end
 
-      private
+      def debug?
+        ENV.fetch('JEKYLL_AMAZON_DEBUG', 'false') == 'true'
+      end
 
       def read_cache(asin)
         path = File.join(CACHE_DIR, asin)
@@ -127,8 +135,7 @@ module Jekyll
       end
 
       def render_from_file(template_type, item)
-        filename = "../../templates/#{template_type}.erb"
-        file = File.expand_path(filename, __dir__)
+        file = File.expand_path("../../templates/#{template_type}.erb", __dir__)
         ERB.new(open(file).read).result(binding)
       end
 
