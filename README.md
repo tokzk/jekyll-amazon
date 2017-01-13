@@ -39,10 +39,10 @@ Put the configuration in your _config.yml:
 
 ```
 jekyll-amazon:
-  locale: 'en'  # if English labels are desired. default: 'ja'
-  country: 'uk' # with the two character country code of their Amazon
+  locale: 'ja'  # label's language. default: 'en'
+  country: 'jp' # with the two character country code of their Amazon
                 # Affiliate account (e.g. `'us'` for United States).
-                # default: 'jp'
+                # default: 'us'
                 # 'br'/'ca'/'cn'/'de'/'es'/'fr'/'in'/'it'/'jp'/'mx/'uk'/'us'
 ```
 
