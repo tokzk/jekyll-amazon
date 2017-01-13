@@ -119,11 +119,10 @@ module Jekyll
       end
 
       def render(context)
-        type = template_type || :detail
         AmazonResultCache.instance.setup(context)
         item = AmazonResultCache.instance.item_lookup(asin.to_s)
         return unless item
-        render_from_file(type, item)
+        render_from_file(template_type, item)
       end
 
       private
@@ -134,8 +133,8 @@ module Jekyll
         self.template_type = options.shift || :title
       end
 
-      def render_from_file(template_type, item)
-        file = File.expand_path("../../templates/#{template_type}.erb", __dir__)
+      def render_from_file(type, item)
+        file = File.expand_path("../../templates/#{type}.erb", __dir__)
         ERB.new(open(file).read).result(binding)
       end
 
