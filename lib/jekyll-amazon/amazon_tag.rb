@@ -118,12 +118,12 @@ module Jekyll
 
       def setup(context)
         @site   = context.registers[:site]
+        @config = @site.config['jekyll-amazon'] || {}
         AmazonResultCache.instance.setup
       end
 
       def setup_i18n
-        locale = 'ja'
-        locale = @site.config['amazon_locale'] if @site.config['amazon_locale']
+        locale = @config['locale'] || 'ja'
         I18n.enforce_available_locales = false
         I18n.locale = locale.to_sym
         file = File.expand_path("../../locales/#{locale}.yml", __dir__)

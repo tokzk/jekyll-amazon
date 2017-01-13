@@ -2,6 +2,7 @@
 
 Liquid tag for display Amazon Associate Links in Jekyll sites: `{% amazon %}`.
 
+
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -39,22 +40,22 @@ gems:
  - jekyll-amazon
 ```
 
-and if English labels are desired, 
+## Configuration
+
+Put the configuration in your _config.yml:
 
 ```
-amazon_locale : en
+jekyll-amazon:
+  locale: 'en'  # if English labels are desired. default: 'ja'
 ```
 
 ## Usage
 
 Use the tag as follows in your jekyll pages, posts and collections:
 
-
 ```liquid
 {% amazon 4083210443 detail %}
 ```
-
-
 
 
 ## Contributing
