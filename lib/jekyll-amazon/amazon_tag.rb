@@ -32,14 +32,14 @@ module Jekyll
         FileUtils.mkdir_p(CACHE_DIR)
       end
 
-      def setup
+      def setup(country)
         ::Amazon::Ecs.debug = debug?
         ::Amazon::Ecs.configure do |options|
           options[:associate_tag]     = ENV.fetch('ECS_ASSOCIATE_TAG')
           options[:AWS_access_key_id] = ENV.fetch('AWS_ACCESS_KEY_ID')
           options[:AWS_secret_key]    = ENV.fetch('AWS_SECRET_KEY')
           options[:response_group]    = RESPONSE_GROUP
-          options[:country]           = ENV.fetch('ECS_COUNTRY', 'jp')
+          options[:country]           = country
         end
       end
 
@@ -97,6 +97,8 @@ module Jekyll
     end
 
     class AmazonTag < Liquid::Tag
+      DEFAULT_LOCALE  = 'ja'
+      DEFAULT_COUNTRY = 'jp'
 
       def initialize(tag_name, markup, tokens)
         super
@@ -117,11 +119,12 @@ module Jekyll
       def setup(context)
         @site   = context.registers[:site]
         @config = @site.config['jekyll-amazon'] || {}
-        AmazonResultCache.instance.setup
+        country = @config['country'] || DEFAULT_COUNTRY
+        AmazonResultCache.instance.setup(country)
       end
 
       def setup_i18n
-        locale = @config['locale'] || 'ja'
+        locale = @config['locale'] || DEFAULT_LOCALE
         I18n.enforce_available_locales = false
         I18n.locale = locale.to_sym
         file = File.expand_path("../../locales/#{locale}.yml", __dir__)
