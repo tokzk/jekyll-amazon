@@ -97,8 +97,8 @@ module Jekyll
     end
 
     class AmazonTag < Liquid::Tag
-      DEFAULT_LOCALE  = 'en'
-      DEFAULT_COUNTRY = 'us'
+      DEFAULT_LOCALE  = 'en'.freeze
+      DEFAULT_COUNTRY = 'us'.freeze
 
       def initialize(tag_name, markup, tokens)
         super
