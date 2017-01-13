@@ -120,6 +120,7 @@ module Jekyll
         @site   = context.registers[:site]
         @config = @site.config['jekyll-amazon'] || {}
         country = @config['country'] || DEFAULT_COUNTRY
+        @template_dir = @config['template_dir']
         AmazonResultCache.instance.setup(country)
       end
 
@@ -138,7 +139,11 @@ module Jekyll
       end
 
       def render_from_file(type, item)
-        file = File.expand_path("../../templates/#{type}.erb", __dir__)
+        if @template_dir
+          template_file = File.expand_path("#{type}.erb", @template_dir)
+          file = template_file if File.exist? template_file
+        end
+        file ||= File.expand_path("../../templates/#{type}.erb", __dir__)
         ERB.new(open(file).read).result(binding)
       end
 

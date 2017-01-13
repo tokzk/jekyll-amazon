@@ -44,6 +44,7 @@ jekyll-amazon:
                 # Affiliate account (e.g. `'us'` for United States).
                 # default: 'us'
                 # 'br'/'ca'/'cn'/'de'/'es'/'fr'/'in'/'it'/'jp'/'mx/'uk'/'us'
+  template_dir: '_templates' # original template directory
 ```
 
 
