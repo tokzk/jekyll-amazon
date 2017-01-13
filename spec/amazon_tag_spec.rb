@@ -13,7 +13,7 @@ describe Jekyll::Amazon::AmazonTag do
     let(:asin) { '0974514055' }
 
     it 'match asin' do
-      expect(output).to match(/Programming Ruby: The Pragmatic Programmer’s Guide/)
+      expect(output).to match(/Programming Ruby: The Pragmatic Programmer/)
     end
   end
 

@@ -2,6 +2,7 @@
 require 'amazon/ecs'
 require 'singleton'
 require 'i18n'
+require 'erb'
 
 module Jekyll
   module Amazon
@@ -26,40 +27,20 @@ module Jekyll
         description:      'EditorialReviews/EditorialReview/Content'
       }.freeze
 
-      ECS_ASSOCIATE_TAG = ENV['ECS_ASSOCIATE_TAG'] || ''
-      AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID'] || ''
-      AWS_SECRET_KEY = ENV['AWS_SECRET_KEY'] || ''
-
-      raise 'AWS_ACCESS_KEY_ID env variable is not set' if AWS_ACCESS_KEY_ID.empty?
-      raise 'AWS_SECRET_KEY env variable is not set' if AWS_SECRET_KEY.empty?
-      raise 'ECS_ASSOCIATE_TAG env variable is not set' if ECS_ASSOCIATE_TAG.empty?
-
       def initialize
         @result_cache = {}
         FileUtils.mkdir_p(CACHE_DIR)
       end
 
-      def setup(context)
-        site = context.registers[:site]
-        # ::Amazon::Ecs.debug = true
+      def setup(country)
+        ::Amazon::Ecs.debug = debug?
         ::Amazon::Ecs.configure do |options|
-          options[:associate_tag]     = ECS_ASSOCIATE_TAG
-          options[:AWS_access_key_id] = AWS_ACCESS_KEY_ID
-          options[:AWS_secret_key]    = AWS_SECRET_KEY
+          options[:associate_tag]     = ENV.fetch('ECS_ASSOCIATE_TAG')
+          options[:AWS_access_key_id] = ENV.fetch('AWS_ACCESS_KEY_ID')
+          options[:AWS_secret_key]    = ENV.fetch('AWS_SECRET_KEY')
           options[:response_group]    = RESPONSE_GROUP
-          options[:country]           = ENV['ECS_COUNTRY'] || 'jp'
+          options[:country]           = country
         end
-
-        setup_i18n(site)
-      end
-
-      def setup_i18n(site)
-        locale = 'ja'
-        locale = site.config['amazon_locale'] if site.config['amazon_locale']
-        I18n.enforce_available_locales = false
-        I18n.locale = locale.to_sym
-        dir = File.expand_path(File.dirname(__FILE__))
-        I18n.load_path = [dir + "/../../locales/#{locale}.yml"]
       end
 
       def item_lookup(asin)
@@ -70,13 +51,21 @@ module Jekyll
           res.first_item
         end
         raise ArgumentError unless item
+        save(asin, item)
+      end
+
+      private
+
+      def save(asin, item)
         data = create_data(item)
         write_cache(asin, data)
         @result_cache[asin] = data
         @result_cache[asin]
       end
 
-      private
+      def debug?
+        ENV.fetch('JEKYLL_AMAZON_DEBUG', 'false') == 'true'
+      end
 
       def read_cache(asin)
         path = File.join(CACHE_DIR, asin)
@@ -107,94 +96,55 @@ module Jekyll
       end
     end
 
-    class ItemAttribute
-      attr_accessor :key
-      attr_accessor :value
-
-      def initialize(key, value)
-        self.key = key
-        self.value = value
-      end
-
-      def to_html
-        str = "<div class=\"jk-amazon-info-#{key}\">"
-        str += labeled
-        str += '</div>'
-        str
-      end
-
-      def labeled
-        return '' if value.nil? || value.empty?
-        "<span class=\"jk-amazon-info-label\">#{I18n.t(key)} </span>#{value}"
-      end
-    end
-
     class AmazonTag < Liquid::Tag
-      attr_accessor :asin
-      attr_accessor :template_type
+      DEFAULT_LOCALE  = 'en'.freeze
+      DEFAULT_COUNTRY = 'us'.freeze
 
       def initialize(tag_name, markup, tokens)
         super
         parse_options(markup)
-        error "No ASIN given in #{tag_name} tag" if asin.nil? || asin.empty?
+        error "No ASIN given in #{tag_name} tag" if @asin.nil? || @asin.empty?
       end
 
       def render(context)
-        type = template_type || :detail
-        AmazonResultCache.instance.setup(context)
-        item = AmazonResultCache.instance.item_lookup(asin.to_s)
+        setup(context)
+        setup_i18n
+        item = AmazonResultCache.instance.item_lookup(@asin.to_s)
         return unless item
-        send(type, item)
+        render_from_file(@template_type, item)
       end
 
       private
 
+      def setup(context)
+        @site   = context.registers[:site]
+        @config = @site.config['jekyll-amazon'] || {}
+        country = @config['country'] || DEFAULT_COUNTRY
+        @template_dir = @config['template_dir']
+        AmazonResultCache.instance.setup(country)
+      end
+
+      def setup_i18n
+        locale = @config['locale'] || DEFAULT_LOCALE
+        I18n.enforce_available_locales = false
+        I18n.locale = locale.to_sym
+        file = File.expand_path("../../locales/#{locale}.yml", __dir__)
+        I18n.load_path = [file]
+      end
+
       def parse_options(markup)
         options = (markup || '').split(' ').map(&:strip)
-        self.asin = options.shift
-        self.template_type = options.shift || :title
+        @asin = options.shift
+        @template_type = options.shift || :title
       end
 
-      def title(item)
-        url   = item[:detail_page_url]
-        title = item[:title]
-        format(
-          %(<a class="jk-amazon-info-title" href="%s" target="_blank">%s</a>),
-          url, title
-        )
-      end
-
-      def image(item)
-        url       = item[:detail_page_url]
-        title     = item[:title]
-        image_url = item[:medium_image_url]
-        str = <<-"EOS"
-<a class="jk-amazon-image" href="#{url}" target="_blank">
-  <img src="#{image_url}" alt="#{title}" />
-</a>
-  EOS
-        str.to_s
-      end
-
-      def detail(item)
-        attrs = {
-          author: item[:author],
-          publisher: item[:publisher],
-          date: item[:publication_date] || item[:release_date],
-          salesrank: item[:salesrank],
-          description: br2nl(item[:description])
-        }.map { |k, v| ItemAttribute.new(k, v).to_html }.join("\n")
-
-        str = <<-"EOS"
-<div class="jk-amazon-item">
-  #{image(item)}
-  <div class="jk-amazon-info">
-    #{title(item)}
-    #{attrs}
-  </div>
-</div>
-        EOS
-        str.to_s
+      def render_from_file(type, item)
+        if @template_dir
+          template_file = File.expand_path("#{type}.erb", @template_dir)
+          file = template_file if File.exist? template_file
+        end
+        file ||= File.expand_path("../../templates/#{type}.erb", __dir__)
+        ERB.new(open(file).read).result(binding)
       end
 
       def br2nl(text)
