@@ -97,21 +97,19 @@ module Jekyll
     end
 
     class AmazonTag < Liquid::Tag
-      attr_accessor :asin
-      attr_accessor :template_type
 
       def initialize(tag_name, markup, tokens)
         super
         parse_options(markup)
-        error "No ASIN given in #{tag_name} tag" if asin.nil? || asin.empty?
+        error "No ASIN given in #{tag_name} tag" if @asin.nil? || @asin.empty?
       end
 
       def render(context)
         setup(context)
         setup_i18n
-        item = AmazonResultCache.instance.item_lookup(asin.to_s)
+        item = AmazonResultCache.instance.item_lookup(@asin.to_s)
         return unless item
-        render_from_file(template_type, item)
+        render_from_file(@template_type, item)
       end
 
       private
@@ -132,8 +130,8 @@ module Jekyll
 
       def parse_options(markup)
         options = (markup || '').split(' ').map(&:strip)
-        self.asin = options.shift
-        self.template_type = options.shift || :title
+        @asin = options.shift
+        @template_type = options.shift || :title
       end
 
       def render_from_file(type, item)
