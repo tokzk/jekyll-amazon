@@ -32,8 +32,7 @@ module Jekyll
         FileUtils.mkdir_p(CACHE_DIR)
       end
 
-      def setup(context)
-        site = context.registers[:site]
+      def setup
         ::Amazon::Ecs.debug = debug?
         ::Amazon::Ecs.configure do |options|
           options[:associate_tag]     = ENV.fetch('ECS_ASSOCIATE_TAG')
@@ -42,17 +41,6 @@ module Jekyll
           options[:response_group]    = RESPONSE_GROUP
           options[:country]           = ENV.fetch('ECS_COUNTRY', 'jp')
         end
-
-        setup_i18n(site)
-      end
-
-      def setup_i18n(site)
-        locale = 'ja'
-        locale = site.config['amazon_locale'] if site.config['amazon_locale']
-        I18n.enforce_available_locales = false
-        I18n.locale = locale.to_sym
-        file = File.expand_path("../../locales/#{locale}.yml", __dir__)
-        I18n.load_path = [file]
       end
 
       def item_lookup(asin)
@@ -119,13 +107,28 @@ module Jekyll
       end
 
       def render(context)
-        AmazonResultCache.instance.setup(context)
+        setup(context)
+        setup_i18n
         item = AmazonResultCache.instance.item_lookup(asin.to_s)
         return unless item
         render_from_file(template_type, item)
       end
 
       private
+
+      def setup(context)
+        @site   = context.registers[:site]
+        AmazonResultCache.instance.setup
+      end
+
+      def setup_i18n
+        locale = 'ja'
+        locale = @site.config['amazon_locale'] if @site.config['amazon_locale']
+        I18n.enforce_available_locales = false
+        I18n.locale = locale.to_sym
+        file = File.expand_path("../../locales/#{locale}.yml", __dir__)
+        I18n.load_path = [file]
+      end
 
       def parse_options(markup)
         options = (markup || '').split(' ').map(&:strip)
